@@ -10,8 +10,16 @@ inputs:
     description: |
       The Sigstore/cosign secret used to sign the image.
 
-      Example: `&#36;{{ secrets.SIGNING_SECRET }}`
+      Example: `&#36;{{ secrets.COSIGN_PRIVATE_KEY }}`
     required: true
+
+  cosign_public_key:
+    description: |
+      The public key, but passed as env.
+
+      Example: `&#36;{{ secrets.COSIGN_PUBLIC_KEY }}`
+    required: false
+
   push:
     description: |
       Whether to push the image to a container registry.
@@ -330,6 +338,7 @@ runs:
       working-directory: ${{ inputs.working_directory }}
       env:
         COSIGN_PRIVATE_KEY: ${{ inputs.cosign_private_key }}
+        COSIGN_PUBLIC_KEY: ${{ inputs.cosign_public_key }}
         GH_TOKEN: ${{ inputs.registry_token }}
         BB_BUILD_PUSH: ${{ inputs.push }}
         BB_PASSWORD: ${{ inputs.registry_token }}
@@ -352,6 +361,12 @@ runs:
         BUILD_OPTS: ${{ inputs.build_opts }}
       run: |
         read -r -a BUILD_OPTS <<< "${BUILD_OPTS}"
+
+        # Create a temporary cosign.pub from the secret if one isn't already present,
+        # a way to avoid committing any type of credential—public or private—directly to the repository
+        if [[ ! -f cosign.pub && -n "${COSIGN_PUBLIC_KEY:-}" ]]; then
+            printf '%s\n' "${COSIGN_PUBLIC_KEY}" > cosign.pub
+        fi
 
         boolean_variables=(
           BB_BUILD_PUSH
