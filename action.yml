@@ -19,6 +19,7 @@ inputs:
 
       Example: `&#36;{{ secrets.COSIGN_PUBLIC_KEY }}`
     required: false
+    default: ""
 
   push:
     description: |
